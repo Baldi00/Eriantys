@@ -1,3 +1,13 @@
+# Eriantys
+
+Trasposizione del gioco da tavolo Eriantys by Cranio Creations
+
+Progetto di Prova Finale di Ingegneria del Software, 3° Anno Laurea Triennale @ Politecnico di Milano<br>
+Creato in collaborazione con altri 2 studenti del corso<br>
+⚠Gli assets non sono gli originali in quanto protetti da copyright⚠
+
+<img src="screenshot.jpg">
+
 ## How to use
 * Server: ```java -jar Eriantys.jar --server [--port server_port]``` (default port: 5000)
 
