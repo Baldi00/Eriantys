@@ -1,0 +1,294 @@
+\documentclass{article}
+
+\usepackage[italian]{babel}
+
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+\usepackage{minted}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\title{Protocollo di Comunicazione}
+\author{Baldelli Andrea, Branchini Alessandro, Benatti Nicolas\\Gruppo AM27}
+
+\begin{document}
+\maketitle
+
+\section{Struttura dei comandi inviati da Client e Server}
+
+Ogni comando inviato sarà un JSON.\\
+IL JSON ha la struttura seguente:
+
+\begin{minted}{json}
+{
+	"command": "command_name",
+	"param1": "param1",
+	"param2": "param2"
+}
+\end{minted}
+
+\noindent Il parametro "command" indica il tipo di comando eseguito e deve essere sempre presente.\\
+Per aiutare la leggibilità il nome dei comandi è molto simile se non uguale ai metodi del Modello chiamati dal Controller.\\
+Dopo command c'è una lista di parametri riferiti al comando.
+
+\bigskip
+\section{Connessione del Client al Server}
+
+Il Client richiede all'utente indirizzo IP e porta del Server e vi si connette.\\
+Se il Server non viene trovato il Client richiede nuovamente IP e porta all'utente.\\
+Una volta connesso, il Server chiede al Client di inserire un nickname. Quest'ultimo lo chiede all'utente e lo invia al Server.\\
+
+\noindent Server $\rightarrow$ Client
+
+\begin{minted}{json}
+{
+	"command": "enterNickname",
+}
+\end{minted}
+
+\noindent Client $\rightarrow$ Server
+
+\begin{minted}{json}
+{
+	"command": "login",
+	"nickname": "playerNickname"
+}
+\end{minted}
+
+\noindent Se il nickname è già in uso il Server lo comunica al Client che lo richiede nuovamente all'utente, altrimenti comunica che il login è avvenuto con successo\\\\
+\noindent Server $\rightarrow$ Client
+
+\begin{minted}{json}
+{
+	"command": "nicknameAlreadyPresent"
+}
+\end{minted}
+
+\noindent Server $\rightarrow$ Client
+
+\begin{minted}{json}
+{
+	"command": "loginSuccessful"
+}
+\end{minted}
+
+\bigskip
+\section{Creazione/Unione alla partita}
+
+Il Client comunica al Server la volontà di unirsi a una partita specificando numero di giocatori e se vuole partecipare a una partita in variante esperta.\\
+Il Server inserisce il Client nella prima partita disponibile avente le caratteristiche richieste. Se non la trova ne crea una nuova con quelle caratteristiche.\\
+
+\noindent Client $\rightarrow$ Server
+
+\begin{minted}{json}
+{
+	"command": "joinMatch",
+	"numPlayers": "numPlayers",
+	"expertMatch": "true/false"
+}
+\end{minted}
+
+\noindent Il Server a questo punto comunica al Client l'avvenuto inserimento in una partita\\
+
+\noindent Server $\rightarrow$ Client
+
+\begin{minted}{json}
+{
+	"command": "joinSuccessful"
+}
+\end{minted}
+
+\bigskip
+\section{Selezione mago e torre}
+
+Quando sono arrivati tutti i giocatori a turno ogni giocatore sceglie torre e mago.\\
+Il server manda al primo giocatore le possibili scelte di maghi/torri.\\
+
+\noindent Server $\rightarrow$ Client
+
+\begin{minted}{json}
+
+{
+	"command": "chooseWizardTower",
+	"wizards": ["w1","w2", "..."],
+	"towers": ["black", "white", "..."]
+}
+\end{minted}
+
+\noindent Il Client una volta scelti mago e torre manda i dati al Server\\
+
+\noindent Client $\rightarrow$ Server
+
+\begin{minted}{json}
+{
+	"command": "addPlayer",
+	"nickname": "playerNickname",
+	"wizard": "wizardId",
+	"tower": "towerColor"
+}
+\end{minted}
+
+\bigskip
+\noindent Quando il controller riceve i dati del giocatore chiama GameManager.addPlayer();
+
+
+\bigskip
+\section{Inizio partita}
+
+Quando tutti i giocatori hanno finito di scegliere, il server inizializza la partita con il metodo preparation();\\
+Dopo di ciò viene inviato un JSON a tutti i giocatori con lo stato iniziale della partita e un messaggio che dice che la partita è stata inizializzata (la libreria GSON fornisce dei metodi per la conversione in JSON di interi oggetti).\\
+
+\noindent Server $\rightarrow$ All Clients
+\begin{minted}{json}
+{
+	"command": "moveDone",
+	"gameState": { "..." },
+	"lastMove":
+	    {
+	        "command": "initialization"
+	    }
+}
+\end{minted}
+
+\bigskip
+\section{Mosse che un giocatore può compiere}
+
+\begin{itemize}
+\item Giocare una carta assistente
+\item Spostare studenti entrata $\rightarrow$ sala, entrata $\rightarrow$ isola
+\item Muovere madre natura (specificando il numero di mosse)
+\item Scegliere una tessera nuvola e prendere tutti gli studenti su di essa
+\item Giocare una carta personaggio (specificando i parametri necessari)
+\end{itemize}
+
+\bigskip
+\noindent Lista di comandi che svolgono queste mosse:
+
+\begin{minted}{json}
+{
+	"command": "playerMovePlayAssistant",
+	"assistant": "assistantId"
+}
+
+{
+	"command": "playerMoveMoveStudentFromEntranceToHall",
+	"studentColor": "studentColor"
+}
+
+{
+	"command": "playerMoveMoveStudentFromEntranceToIsland",
+	"studentColor": "studentColor",
+	"islandId": "islandId"
+}
+{
+	"command": "playerMoveMoveMotherNature",
+	"steps": "steps"
+}
+
+\end{minted}
+\newpage
+\begin{minted}{json}
+{
+	"command": "playerMovePickStudentsFromCloud",
+	"cloudId": "cloudId"
+}
+
+{
+	"command": "playerMovePlayCharacter",
+	"characterType": "characterType",
+	"studentColor": "studentColor",
+	"islandId": "islandId",
+	"toExchangeFrom": ["studentColor1", "studentColor2", "..."],
+	"toExchangeTo": ["studentColor1", "studentColor2", "..."],
+	"toExchangeFromNumber": "numberOfExchanges",
+	"toExchangeToNumber": "numberOfExchanges"
+}
+\end{minted}
+
+
+\bigskip
+\section{Risposta del Server a seguito di una mossa}
+
+A seguito della ricezione di un comando mossa da parte di un Client, il Server modifica lo stato del gioco e invia lo stato modificato a tutti i Client in formato JSON insieme a un messaggio contenente l'ultima mossa fatta.\\
+
+\noindent Server $\rightarrow$ All Clients
+\begin{minted}{json}
+{
+	"command": "moveDone",
+	"gameState": { "..." },
+	"nickname": "playerOfTheMoveNickname",
+	"lastMove":
+	    {
+	        "command": "...",
+	        "param1": "...",
+	        "param2": "..."
+	    }
+}
+\end{minted}
+
+\section{Gestione degli imprevisti}
+\subsection{Logout dell'utente}\label{logout}
+Siccome non gestiamo la resilienza alle disconnessioni, se un utente si disconnette volontariamente la partita deve terminare per tutti in qualunque fase di gioco.\\
+
+\noindent Il Client manda un messaggio di logout al Server e il Server invia a tutti i Client un messaggio di chiusura forzata affinché si disconnettano.\\
+
+\newpage
+
+\noindent Client $\rightarrow$ Server
+\begin{minted}{json}
+{
+	"command": "logout"
+}
+\end{minted}
+\bigskip
+\noindent Server $\rightarrow$ All Clients
+\begin{minted}{json}
+{
+	"command": "forceEndMatch"
+}
+\end{minted}
+
+\bigskip
+\subsection{Server down}\label{serverdown}
+Il Server, dopo che un Client si è connesso, inizia ad inviargli dei beat ad intervalli regolari.\\
+Se il Client non rileva più l'arrivo di suddetti beat considera il Server disconnesso e si chiude.
+
+
+\bigskip
+
+\noindent Server $\rightarrow$ Client
+\begin{minted}{json}
+{
+	"command": "beat"
+}
+\end{minted}
+
+\subsection{Client down}
+Allo stesso modo, ogni Client, dopo essersi connesso, inizia ad inviare dei beat al Server ad intervalli regolari.\\
+Se il Server non rileva più l'arrivo dei suddetti beat da un Client lo considera disconnesso. A questo punto la partita termina e il Server invia a tutti gli altri Client connessi un messaggio di chiusura forzata affinché si disconnettano.
+
+\bigskip
+
+\noindent Client $\rightarrow$ Server
+\begin{minted}{json}
+{
+	"command": "beat"
+}
+\end{minted}
+
+\noindent Server $\rightarrow$ All Clients
+\begin{minted}{json}
+{
+	"command": "forceEndMatch"
+}
+\end{minted}
+
+\bigskip
+\section{Fine della Partita}
+
+La partita si è conclusa correttamente con un vincitore.\\
+Il Server invia normalmente il messaggio di moveDone che contiene lo stato del gioco.\\
+I Client leggendo il gameState si accorgono che è nello stato di GAME\_OVER. Sempre dal gameState reperiscono il vincitore e comunicano all'utente la fine della partita insieme con il vincitore.\\
+A questo punto i Client si disconnettono.\\
+Il Server si accorge della loro disconnessione ed esegue le operazioni di pulizia della partita.\\
+
+\end{document}

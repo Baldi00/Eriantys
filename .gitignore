@@ -1,0 +1,11 @@
+# intellij folders
+.idea
+target
+*.iml
+
+# DIA temp files
+*.dia~
+
+# maven shade plugin
+dependency-reduced-pom.xml
+shade
